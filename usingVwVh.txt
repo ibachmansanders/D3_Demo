@@ -1,0 +1,124 @@
+/* Main JavaScript sheet, Ian Bachman-Sanders, March 2017*/
+window.onload = function(){ //begin code on window load
+
+	//svg dimension variables
+	var w = "90", h = "90";
+
+	//this is a d3 code block for the element container
+	var container = d3.select("body") //use d3 to select the body element (the first it comes across)
+		.append("svg") //append an svg element in the body, changing the selection to the svg
+		.style("background-color","rgba(0,0,0,0.2)")
+		.attr("width", w + "vw")//assign width
+		.attr("height", h + "vh")//assign height
+		.attr("class","container") //BEST PRACTICE assign class name matching variable name for styling, selection
+		;
+
+	//start a new code block to create a variable to put within the container
+	//BEST PRACTICE create only one new element per block
+	var rectangle = container.append("rect") //puts a <rect> into the svg
+		.datum(w*0.9) //a single value available in this code block for anonymous functions
+		.attr("width",function(d){ //d is arbitrary- the function will refer to the .datum object
+			return d+"vw" //"40vw"
+		})
+		.attr("height",function(d){
+			return d+"vh" //"20vh"
+		})
+		.attr("x",function(d){
+			var xDist = (w-d)/2
+			return xDist + "vw";
+		}) //distance from left on x axis
+		.attr("y",function(d){
+			var yDist = (h-d)/2
+			return yDist + "vh";
+		}) //distance from top on y axis
+		.style("fill","#FFFFFF")
+		.attr("class","rectangle") //assigned class (same as object name)
+		;
+
+	//LESSON 2 & 3: Working in with data and arrays
+	//let's add complex data to circles! A list of objects/dictionary
+	var cityPop = [
+	    { 
+	        city: 'Madison',
+	        population: 233209
+	    },
+	    {
+	        city: 'Milwaukee',
+	        population: 594833
+	    },
+	    {
+	        city: 'Green Bay',
+	        population: 104057
+	    },
+	    {
+	        city: 'Superior',
+	        population: 27244
+	    }
+	];
+
+	//create a scale to map out the cities' x coordinates
+	var xScale = d3.scaleLinear() //create the scale generator (NOT object, it is a tool reliant upon input)
+		.range([(w-rectangle._groups["0"]["0"].__data__),(w-(w-rectangle._groups["0"]["0"].__data__))]) 
+		//could be .range([10,90]), but I'm scaling to the vw/vh set above and the rect values
+		.domain([0,3]); //input min and max
+
+	//create a y scale
+	//find min value in array
+	var minPop = d3.min(cityPop, function(d){
+		return d.population;
+	});
+	//find max value in array
+	var maxPop = d3.max(cityPop,function(d){
+		return d.population;
+	});
+	//creat scale
+	var yScale = d3.scaleLinear()
+		.range([rectangle._groups["0"]["0"].__data__,(w-rectangle._groups["0"]["0"].__data__)]) //again based on rect vh
+		//equivalent to ([90,10])
+		.domain([
+			minPop,
+			maxPop
+		]);
+
+	//COLOR SCALE generator
+	var colorScale = d3.scaleLinear()
+		//choose a color range
+		.range([
+				//unclassed- to class, provide # of colors equal to classes
+				"#99d8c9",
+				"#005824"
+		])
+		//set your domain (based here on our array min max)
+		.domain([
+			minPop,
+			maxPop
+		]);
+
+	//THE MAGIC TRIO for using data - .d3.selectAll(),.data(),.enter()
+	var circles = container.selectAll(".circles") //doesn't exist yet- creates an empty selection, allowing us to enter data from our array
+		.data(cityPop) //call on the array above
+		.enter() //enter the data into the container, magically - 
+		//all following commands apply to all circles created based on array, like a loop
+			.append("circle") //add a circle for each datum in the array into the svg
+			.attr("r", function(d,i){ //set radius
+				console.log("d: ",d,"i: ",i); //check out the values - i = index (array location)
+				var area = d.population*0.01; //derive radius from population as area, scaled down to fit on screen
+				return Math.sqrt(area/Math.PI);
+			})
+			.attr("cx",function(d,i){
+				return xScale(i) + "vw"; //use the scaleLinear above to calculate cx, then convert units
+			})
+			.attr("cy",function(d){
+				return yScale(d.population) + "vh";
+			})
+			.style("fill",function(d){
+				return colorScale(d.population)
+			})
+			.style("stroke","#005824")
+			.attr("class","circles")
+			.attr("id",function(d){
+				return d.city; //assign each circle an id based on the name
+			})
+		;
+
+};
